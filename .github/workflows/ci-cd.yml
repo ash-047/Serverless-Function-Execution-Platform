@@ -1,10 +1,10 @@
-name: CI/CD Pipeline
+name: Pipeline 1
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, dev3 ] 
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, dev3 ]
 
 jobs:
   build-and-test:
