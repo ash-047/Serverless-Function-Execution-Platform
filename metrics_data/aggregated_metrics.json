@@ -1,0 +1,30 @@
+{
+  "total_executions": 2,
+  "successful_executions": 2,
+  "failed_executions": 0,
+  "total_execution_time": 3.3112971782684326,
+  "avg_execution_time": 1.6556485891342163,
+  "cold_starts": 2,
+  "warm_starts": 0,
+  "by_language": {
+    "python": {
+      "count": 2,
+      "success": 2,
+      "errors": 0,
+      "avg_time": 1.6556485891342163,
+      "total_time": 3.3112971782684326
+    }
+  },
+  "by_runtime": {
+    "docker": {
+      "count": 2,
+      "success": 2,
+      "errors": 0,
+      "avg_time": 1.6556485891342163,
+      "total_time": 3.3112971782684326
+    }
+  },
+  "hourly_stats": {
+    "2025-04-04 00:00": 2
+  }
+}

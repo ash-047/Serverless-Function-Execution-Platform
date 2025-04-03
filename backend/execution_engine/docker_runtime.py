@@ -82,7 +82,8 @@ class DockerRuntime:
                         function_name: str = "handler", 
                         input_data: Dict[str, Any] = None, 
                         timeout: Optional[int] = None,
-                        language: Optional[str] = None) -> Dict[str, Any]:
+                        language: Optional[str] = None,
+                        runtime: Optional[str] = None) -> Dict[str, Any]:
         """
         Execute a function in a Docker container.
         
@@ -92,6 +93,7 @@ class DockerRuntime:
             input_data: Input data to pass to the function
             timeout: Timeout for this specific execution (overrides default)
             language: The programming language to use (overrides instance default)
+            runtime: Optional container runtime to use (e.g., 'runsc' for gVisor)
             
         Returns:
             A dictionary containing the execution result or error
@@ -145,26 +147,33 @@ class DockerRuntime:
                 print(f"Creating new container: {container_name}")
                 
                 try:
-                    # Execute the function in a container
-                    container = self.client.containers.run(
-                        self.base_image,
-                        detach=True,
-                        name=container_name,
-                        volumes={
+                    # Prepare container options
+                    container_options = {
+                        "image": self.base_image,
+                        "detach": True,
+                        "name": container_name,
+                        "volumes": {
                             code_path: {
                                 "bind": f"/function/function_code{self.file_extension}",
                                 "mode": "ro"
                             }
                         },
-                        environment={
+                        "environment": {
                             "FUNCTION_PATH": f"/function/function_code{self.file_extension}",
                             "FUNCTION_NAME": function_name,
                             "INPUT_DATA": json.dumps(input_data)
                         },
-                        mem_limit="128m",  # Memory limit
-                        cpu_quota=100000,  # 10% of CPU
-                        network_mode="none"  # No network access for security
-                    )
+                        "mem_limit": "128m",  # Memory limit
+                        "cpu_quota": 100000,  # 10% of CPU
+                        "network_mode": "none"  # No network access for security
+                    }
+                    
+                    # Add runtime if specified (e.g., gVisor)
+                    if runtime:
+                        container_options["runtime"] = runtime
+                    
+                    # Execute the function in a container
+                    container = self.client.containers.run(**container_options)
                     container_id = container.id
                     print(f"Created container with ID: {container_id[:12]}")
                 except Exception as e:
@@ -242,6 +251,7 @@ class DockerRuntime:
                     result["execution_time"] = execution_time
                     result["container_id"] = container_id
                     result["warm_start"] = using_pooled_container
+                    result["runtime"] = runtime if runtime else "standard"
                     return result
                 except json.JSONDecodeError as e:
                     print(f"Error parsing JSON: {e}")
@@ -250,7 +260,8 @@ class DockerRuntime:
                         "error": "Failed to parse function output",
                         "logs": logs,
                         "execution_time": execution_time,
-                        "warm_start": using_pooled_container
+                        "warm_start": using_pooled_container,
+                        "runtime": runtime if runtime else "standard"
                     }
                     
             except Exception as e:
@@ -261,7 +272,8 @@ class DockerRuntime:
                     "status": "error",
                     "error": f"Function execution failed or timed out: {str(e)}",
                     "execution_time": execution_time,
-                    "warm_start": using_pooled_container
+                    "warm_start": using_pooled_container,
+                    "runtime": runtime if runtime else "standard"
                 }
                 
         finally:
