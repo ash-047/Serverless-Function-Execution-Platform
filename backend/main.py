@@ -4,15 +4,17 @@ import platform
 import sys
 import traceback
 from enum import Enum
-from fastapi import FastAPI, HTTPException, Body, Query
+from fastapi import FastAPI, HTTPException, Body, Query, Security, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 import uvicorn
 import time
 import hashlib
+import secrets
 
 # Print diagnostic information to help with debugging
 def print_diagnostic_info():
@@ -120,10 +122,27 @@ class FunctionMetadata(BaseModel):
 # Simple in-memory storage for functions
 functions_db = {}
 
+# For demo purposes, generate a fixed API key
+# In production, you'd use a more secure approach
+API_KEY = "serverless-platform-demo-key"
+API_KEY_NAME = "X-API-Key"
+
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+def get_api_key(api_key_header: str = Security(api_key_header)):
+    if api_key_header == API_KEY:
+        return api_key_header
+    return None
+
 @app.get("/")
 async def root():
-    """Serve the main UI page"""
+    """Serve the main UI page with a documentation link"""
     return FileResponse(os.path.join(static_dir, "index.html"))
+
+@app.get("/docs/guide")
+async def documentation():
+    """Serve the documentation page"""
+    return FileResponse(os.path.join(static_dir, "docs.html"))
 
 @app.post("/execute")
 async def execute_function(request: FunctionExecutionRequest):
@@ -328,9 +347,51 @@ async def get_hourly_metrics():
     metrics = metrics_manager.get_metrics()
     return metrics.get("hourly_stats", {})
 
-@app.get("/system/info")
+@app.get("/metrics/function/{function_id}")
+async def get_function_metrics(function_id: str):
+    """Get metrics for a specific function"""
+    criteria = {"function_id": function_id}
+    executions = metrics_manager.get_executions_by_criteria(criteria)
+    
+    if not executions:
+        return {
+            "total": 0,
+            "success": 0,
+            "error": 0,
+            "avg_time": 0
+        }
+    
+    total = len(executions)
+    success = sum(1 for e in executions if e.get("status") == "success")
+    error = total - success
+    
+    # Calculate average time
+    exec_times = [e.get("execution_time", 0) for e in executions if "execution_time" in e]
+    avg_time = sum(exec_times) / len(exec_times) if exec_times else 0
+    
+    # Get timestamp of latest execution
+    latest = max([e.get("timestamp", 0) for e in executions]) if executions else 0
+    
+    return {
+        "total": total,
+        "success": success,
+        "error": error,
+        "avg_time": avg_time,
+        "latest_execution": latest
+    }
+
+@app.delete("/functions/{function_id}")
+async def delete_function(function_id: str):
+    """Delete a function"""
+    if function_id not in functions_db:
+        raise HTTPException(status_code=404, detail="Function not found")
+    
+    del functions_db[function_id]
+    return {"message": f"Function {function_id} deleted successfully"}
+
+@app.get("/system/info", dependencies=[Depends(get_api_key)])
 async def get_system_info():
-    """Get system information"""
+    """Get system information (protected endpoint)"""
     # Get container pool metrics from each runtime
     pool_metrics = {}
     
@@ -349,6 +410,50 @@ async def get_system_info():
         "metrics_storage": os.path.exists(metrics_dir),
         "stored_functions": len(functions_db)
     }
+
+@app.get("/system/status")
+async def get_system_status():
+    """Get detailed system status"""
+    # Get container pool metrics
+    pool_metrics = {}
+    
+    if hasattr(docker_py, 'container_pool') and docker_py.container_pool:
+        pool_metrics["docker_python"] = docker_py.container_pool.get_pool_metrics()
+        
+    if hasattr(docker_js, 'container_pool') and docker_js.container_pool:
+        pool_metrics["docker_javascript"] = docker_js.container_pool.get_pool_metrics()
+    
+    # Get overall metrics
+    metrics = metrics_manager.get_metrics()
+    
+    # Get active container count
+    try:
+        active_containers = len(docker_py.client.containers.list())
+    except:
+        active_containers = 0
+    
+    # Get number of stored functions by language
+    functions_by_language = {
+        "python": sum(1 for f in functions_db.values() if f.get("language") == "python"),
+        "javascript": sum(1 for f in functions_db.values() if f.get("language") == "javascript")
+    }
+    
+    return {
+        "uptime": time.time() - startup_time,
+        "active_containers": active_containers,
+        "stored_functions": len(functions_db),
+        "functions_by_language": functions_by_language,
+        "execution_count": metrics.get("total_executions", 0),
+        "success_rate": (metrics.get("successful_executions", 0) / metrics.get("total_executions", 1)) * 100 if metrics.get("total_executions", 0) > 0 else 0,
+        "container_pools": pool_metrics,
+        "runtimes": {
+            "docker": {"available": True},
+            "gvisor": {"available": gvisor_available}
+        }
+    }
+
+# Add startup time tracking
+startup_time = time.time()
 
 @app.on_event("startup")
 async def startup_event():
