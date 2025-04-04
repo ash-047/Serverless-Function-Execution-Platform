@@ -157,14 +157,20 @@ async def execute_function(request: FunctionExecutionRequest):
         runtime = None
         if request.language == Language.javascript:
             if request.runtime == Runtime.gvisor:
+                # Will automatically use Docker if gVisor isn't available
                 runtime = gvisor_js
+                print(f"Selected JavaScript gVisor runtime (actual: {gvisor_js.runtime_type})")
             else:
                 runtime = docker_js
+                print("Selected JavaScript Docker runtime")
         else:
             if request.runtime == Runtime.gvisor:
+                # Will automatically use Docker if gVisor isn't available
                 runtime = gvisor_py
+                print(f"Selected Python gVisor runtime (actual: {gvisor_py.runtime_type})")
             else:
                 runtime = docker_py
+                print("Selected Python Docker runtime")
             
         # Generate a unique execution ID
         execution_id = f"exec-{int(time.time())}-{hashlib.md5(request.code.encode()).hexdigest()[:6]}"
@@ -180,11 +186,11 @@ async def execute_function(request: FunctionExecutionRequest):
         # Add execution ID to result
         result["execution_id"] = execution_id
         
-        # Record metrics
+        # Record metrics - use the actual runtime type from the result, which may be a fallback
         metrics_manager.record_execution({
             "execution_id": execution_id,
             "language": request.language,
-            "runtime": request.runtime,
+            "runtime": result.get("runtime", request.runtime),  # Use actual runtime from result
             "status": result.get("status"),
             "execution_time": result.get("execution_time"),
             "warm_start": result.get("warm_start", False),
@@ -272,13 +278,17 @@ async def execute_stored_function(
         if function.get("language") == Language.javascript:
             if selected_runtime == Runtime.gvisor:
                 runtime_engine = gvisor_js
+                print(f"Selected JavaScript gVisor runtime for stored function (actual: {gvisor_js.runtime_type})")
             else:
                 runtime_engine = docker_js
+                print("Selected JavaScript Docker runtime for stored function")
         else:
             if selected_runtime == Runtime.gvisor:
                 runtime_engine = gvisor_py
+                print(f"Selected Python gVisor runtime for stored function (actual: {gvisor_py.runtime_type})")
             else:
                 runtime_engine = docker_py
+                print("Selected Python Docker runtime for stored function")
             
         # Execute the function
         result = runtime_engine.execute_function(
@@ -291,12 +301,12 @@ async def execute_stored_function(
         # Add execution ID to result
         result["execution_id"] = execution_id
         
-        # Record metrics
+        # Record metrics - use the actual runtime type from the result
         metrics_manager.record_execution({
             "execution_id": execution_id,
             "function_id": function_id,
             "language": function.get("language"),
-            "runtime": selected_runtime,
+            "runtime": result.get("runtime", selected_runtime),  # Use actual runtime from result
             "status": result.get("status"),
             "execution_time": result.get("execution_time"),
             "warm_start": result.get("warm_start", False),

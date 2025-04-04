@@ -35,7 +35,14 @@ class RuntimeFactory:
         
         # Create the appropriate runtime
         if runtime_type.lower() == "gvisor":
-            return GVisorRuntime(base_image=image, language=language, **kwargs)
+            # Check if gVisor is available before creating the gVisor runtime
+            is_available = RuntimeFactory.is_gvisor_available()
+            if is_available:
+                print("Using gVisor runtime")
+                return GVisorRuntime(base_image=image, language=language, **kwargs)
+            else:
+                print("gVisor runtime requested but not available. Falling back to Docker runtime.")
+                return DockerRuntime(base_image=image, language=language, **kwargs)
         else:
             return DockerRuntime(base_image=image, language=language, **kwargs)
     
@@ -47,7 +54,9 @@ class RuntimeFactory:
             client = docker.from_env()
             info = client.info()
             runtimes = info.get('Runtimes', {})
-            return 'runsc' in runtimes
+            gvisor_available = 'runsc' in runtimes
+            print(f"gVisor availability check: {'Available' if gvisor_available else 'Not available'}")
+            return gvisor_available
         except Exception as e:
             print(f"Error checking gVisor availability: {e}")
             return False
@@ -75,6 +84,12 @@ class GVisorRuntime:
         self.using_gvisor = RuntimeFactory.is_gvisor_available()
         self.runtime_type = "gvisor" if self.using_gvisor else "docker"
         
+        # Log whether we're actually using gVisor
+        if self.using_gvisor:
+            print(f"GVisorRuntime initialized with gVisor for {language}")
+        else:
+            print(f"GVisorRuntime initialized with Docker fallback for {language} (gVisor not available)")
+        
         # Store for metrics
         self.language = language
     
@@ -92,6 +107,16 @@ class GVisorRuntime:
         Returns:
             A dictionary containing the execution result
         """
+        # Double-check gVisor availability at runtime (it could have changed)
+        self.using_gvisor = RuntimeFactory.is_gvisor_available()
+        self.runtime_type = "gvisor" if self.using_gvisor else "docker"
+        
+        # Log which runtime is being used for this execution
+        if self.using_gvisor:
+            print(f"Executing {self.language} function with gVisor runtime")
+        else:
+            print(f"Executing {self.language} function with Docker runtime (fallback mode)")
+        
         # Use the docker runtime with gVisor-specific options
         result = self.docker_runtime.execute_function(
             code=code,
