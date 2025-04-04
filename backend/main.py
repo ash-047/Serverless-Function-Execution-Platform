@@ -15,6 +15,7 @@ import uvicorn
 import time
 import hashlib
 import secrets
+import docker
 
 # Print diagnostic information to help with debugging
 def print_diagnostic_info():
