@@ -2,11 +2,8 @@ FROM python:3.9-slim
 
 WORKDIR /function
 
-# Install common dependencies that might be useful for functions
 RUN pip install --no-cache-dir requests numpy pandas
 
-# Copy the function handler script
 COPY function_handler.py /function/
 
-# Command to run the function
 ENTRYPOINT ["python", "/function/function_handler.py"]
