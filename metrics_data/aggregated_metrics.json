@@ -1,37 +1,30 @@
 {
-  "total_executions": 2,
-  "successful_executions": 2,
+  "total_executions": 1,
+  "successful_executions": 1,
   "failed_executions": 0,
-  "total_execution_time": 5.610299348831177,
-  "avg_execution_time": 2.8051496744155884,
-  "cold_starts": 2,
+  "total_execution_time": 3.7767982482910156,
+  "avg_execution_time": 3.7767982482910156,
+  "cold_starts": 1,
   "warm_starts": 0,
   "by_language": {
     "python": {
       "count": 1,
       "success": 1,
       "errors": 0,
-      "avg_time": 2.0504086017608643,
-      "total_time": 2.0504086017608643
-    },
-    "javascript": {
-      "count": 1,
-      "success": 1,
-      "errors": 0,
-      "avg_time": 3.5598907470703125,
-      "total_time": 3.5598907470703125
+      "avg_time": 3.7767982482910156,
+      "total_time": 3.7767982482910156
     }
   },
   "by_runtime": {
-    "docker": {
-      "count": 2,
-      "success": 2,
+    "standard": {
+      "count": 1,
+      "success": 1,
       "errors": 0,
-      "avg_time": 2.8051496744155884,
-      "total_time": 5.610299348831177
+      "avg_time": 3.7767982482910156,
+      "total_time": 3.7767982482910156
     }
   },
   "hourly_stats": {
-    "2025-04-04 15:00": 2
+    "2025-04-04 17:00": 1
   }
 }
