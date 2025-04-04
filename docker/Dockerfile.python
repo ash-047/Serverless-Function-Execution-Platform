@@ -1,0 +1,9 @@
+FROM python:3.9-slim
+
+WORKDIR /function
+
+RUN pip install --no-cache-dir requests numpy pandas
+
+COPY function_handler.py /function/
+
+ENTRYPOINT ["python", "/function/function_handler.py"]
