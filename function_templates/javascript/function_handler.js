@@ -7,6 +7,7 @@ const inputDataStr = process.env.INPUT_DATA || '{}';
 
 async function executeFunction() {
   try {
+    
     const userModule = require(functionPath);
     
     if (typeof userModule[functionName] !== 'function') {
@@ -18,6 +19,7 @@ async function executeFunction() {
     const startTime = Date.now();
     
     try {
+      
       const fnResult = userModule[functionName](inputData);
       let result;
       
@@ -45,6 +47,7 @@ async function executeFunction() {
       };
     }
   } catch (loadError) {
+
     return {
       status: 'error',
       error: `Failed to load function: ${loadError.message}`,

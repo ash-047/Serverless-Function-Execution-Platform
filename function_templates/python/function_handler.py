@@ -23,12 +23,10 @@ def handle_request():
     """
     Main handler for incoming function execution requests.
     """
-    # Get the execution parameters from environment variables
     function_path = os.environ.get("FUNCTION_PATH", "/function/function_code.py")
     function_name = os.environ.get("FUNCTION_NAME", "handler")
     input_data = os.environ.get("INPUT_DATA", "{}")
     
-    # Load the user function
     try:
         user_function = load_function(function_path, function_name)
     except Exception as e:
@@ -38,14 +36,12 @@ def handle_request():
             "traceback": traceback.format_exc()
         }
     
-    # Execute the function with the provided input
     start_time = time.time()
     try:
         input_obj = json.loads(input_data)
         result = user_function(input_obj)
         execution_time = time.time() - start_time
         
-        # Ensure the result is JSON serializable
         try:
             json.dumps(result)
         except TypeError:
@@ -67,5 +63,5 @@ def handle_request():
 
 if __name__ == "__main__":
     response = handle_request()
-    # Print response to stdout for the container to capture
+
     print(json.dumps(response))
