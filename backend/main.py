@@ -17,7 +17,6 @@ import hashlib
 import secrets
 import docker
 
-# Print diagnostic information to help with debugging
 def print_diagnostic_info():
     print("=== Diagnostic Information ===")
     print(f"Python version: {sys.version}")
@@ -32,66 +31,54 @@ def print_diagnostic_info():
 
 print_diagnostic_info()
 
-# Import our execution engine
 print("Importing execution engines...")
 from execution_engine.runtime_factory import RuntimeFactory
 from metrics.metrics_manager import MetricsManager
 
 app = FastAPI(title="Serverless Function Platform")
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development, restrict in production
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Define the static files directory (relative to where the app is run)
 static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 if not os.path.exists(static_dir):
     os.makedirs(static_dir)
     print(f"Created static directory: {static_dir}")
 
-# Mount the static files directory
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Set up metrics directory
 metrics_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "metrics_data")
 if not os.path.exists(metrics_dir):
     os.makedirs(metrics_dir)
     print(f"Created metrics directory: {metrics_dir}")
 
-# Initialize metrics manager
 metrics_manager = MetricsManager(storage_dir=metrics_dir)
 
-# Check if gVisor is available
 gvisor_available = RuntimeFactory.is_gvisor_available()
 print(f"gVisor runtime {'is' if gvisor_available else 'is not'} available")
 
-# Initialize execution engines
 print("Initializing execution engines...")
 docker_py = RuntimeFactory.create_runtime("docker", "python", use_pool=True)
 docker_js = RuntimeFactory.create_runtime("docker", "javascript", use_pool=True)
 
-# Initialize gVisor runtimes
 gvisor_py = RuntimeFactory.create_runtime("gvisor", "python", use_pool=False)
 gvisor_js = RuntimeFactory.create_runtime("gvisor", "javascript", use_pool=False)
 
 print("Execution engines initialized successfully!")
 
-# Define language enum
 class Language(str, Enum):
     python = "python"
     javascript = "javascript"
 
-# Define runtime enum
 class Runtime(str, Enum):
     docker = "docker"
     gvisor = "gvisor"
 
-# Models for request/response
 class FunctionExecutionRequest(BaseModel):
     code: str
     function_name: str = "handler"
@@ -107,7 +94,7 @@ class FunctionCreateRequest(BaseModel):
     description: Optional[str] = None
     language: Language = Language.python
     timeout: Optional[int] = 60
-    memory: Optional[int] = 128  # Memory limit in MB
+    memory: Optional[int] = 128  
 
 class FunctionMetadata(BaseModel):
     id: str
@@ -120,11 +107,8 @@ class FunctionMetadata(BaseModel):
     created_at: Optional[float] = None
     updated_at: Optional[float] = None
 
-# Simple in-memory storage for functions
 functions_db = {}
 
-# For demo purposes, generate a fixed API key
-# In production, you'd use a more secure approach
 API_KEY = "serverless-platform-demo-key"
 API_KEY_NAME = "X-API-Key"
 
@@ -149,33 +133,24 @@ async def documentation():
 async def execute_function(request: FunctionExecutionRequest):
     """Execute a function directly from the request"""
     try:
-        # Add more detailed logging
+        
         print(f"Executing {request.language} function: {request.function_name} with {request.runtime} runtime")
         print(f"Input data: {request.input_data}")
         
-        # Select the appropriate runtime based on language and runtime
         runtime = None
         if request.language == Language.javascript:
             if request.runtime == Runtime.gvisor:
-                # Will automatically use Docker if gVisor isn't available
                 runtime = gvisor_js
-                print(f"Selected JavaScript gVisor runtime (actual: {gvisor_js.runtime_type})")
             else:
                 runtime = docker_js
-                print("Selected JavaScript Docker runtime")
         else:
             if request.runtime == Runtime.gvisor:
-                # Will automatically use Docker if gVisor isn't available
                 runtime = gvisor_py
-                print(f"Selected Python gVisor runtime (actual: {gvisor_py.runtime_type})")
             else:
                 runtime = docker_py
-                print("Selected Python Docker runtime")
             
-        # Generate a unique execution ID
         execution_id = f"exec-{int(time.time())}-{hashlib.md5(request.code.encode()).hexdigest()[:6]}"
         
-        # Execute the function
         result = runtime.execute_function(
             code=request.code,
             function_name=request.function_name,
@@ -183,14 +158,12 @@ async def execute_function(request: FunctionExecutionRequest):
             timeout=request.timeout
         )
         
-        # Add execution ID to result
         result["execution_id"] = execution_id
         
-        # Record metrics - use the actual runtime type from the result, which may be a fallback
         metrics_manager.record_execution({
             "execution_id": execution_id,
             "language": request.language,
-            "runtime": result.get("runtime", request.runtime),  # Use actual runtime from result
+            "runtime": request.runtime,
             "status": result.get("status"),
             "execution_time": result.get("execution_time"),
             "warm_start": result.get("warm_start", False),
@@ -204,7 +177,6 @@ async def execute_function(request: FunctionExecutionRequest):
         print(f"Error executing function: {str(e)}")
         print(traceback.format_exc())
         
-        # Record error metrics
         metrics_manager.record_execution({
             "execution_id": f"error-{int(time.time())}",
             "language": request.language,
@@ -221,10 +193,8 @@ async def create_function(request: FunctionCreateRequest):
     """Create/update a stored function"""
     function_id = request.name.lower().replace(" ", "-")
     
-    # Add timestamp for creation/update
     now = time.time()
     
-    # Check if updating or creating
     is_update = function_id in functions_db
     
     functions_db[function_id] = {
@@ -267,30 +237,26 @@ async def execute_stored_function(
     
     function = functions_db[function_id]
     try:
-        # Determine runtime to use (query param > preferred > default)
+        
         selected_runtime = runtime or function.get("preferred_runtime") or Runtime.docker
         
-        # Generate execution ID
+        
         execution_id = f"exec-{function_id}-{int(time.time())}"
         
-        # Select the appropriate runtime based on function language and runtime
+       
         runtime_engine = None
         if function.get("language") == Language.javascript:
             if selected_runtime == Runtime.gvisor:
                 runtime_engine = gvisor_js
-                print(f"Selected JavaScript gVisor runtime for stored function (actual: {gvisor_js.runtime_type})")
             else:
                 runtime_engine = docker_js
-                print("Selected JavaScript Docker runtime for stored function")
         else:
             if selected_runtime == Runtime.gvisor:
                 runtime_engine = gvisor_py
-                print(f"Selected Python gVisor runtime for stored function (actual: {gvisor_py.runtime_type})")
             else:
                 runtime_engine = docker_py
-                print("Selected Python Docker runtime for stored function")
             
-        # Execute the function
+        
         result = runtime_engine.execute_function(
             code=function["code"],
             function_name=function["function_name"],
@@ -298,15 +264,15 @@ async def execute_stored_function(
             timeout=function.get("timeout", 60)
         )
         
-        # Add execution ID to result
+        
         result["execution_id"] = execution_id
         
-        # Record metrics - use the actual runtime type from the result
+        
         metrics_manager.record_execution({
             "execution_id": execution_id,
             "function_id": function_id,
             "language": function.get("language"),
-            "runtime": result.get("runtime", selected_runtime),  # Use actual runtime from result
+            "runtime": selected_runtime,
             "status": result.get("status"),
             "execution_time": result.get("execution_time"),
             "warm_start": result.get("warm_start", False),
@@ -316,7 +282,7 @@ async def execute_stored_function(
         
         return result
     except Exception as e:
-        # Record error metrics
+        
         metrics_manager.record_execution({
             "execution_id": f"error-{function_id}-{int(time.time())}",
             "function_id": function_id,
@@ -329,7 +295,6 @@ async def execute_stored_function(
         
         raise HTTPException(status_code=500, detail=f"Function execution failed: {str(e)}")
 
-# Add metrics endpoints
 @app.get("/metrics")
 async def get_metrics():
     """Get metrics for function executions"""
@@ -376,11 +341,11 @@ async def get_function_metrics(function_id: str):
     success = sum(1 for e in executions if e.get("status") == "success")
     error = total - success
     
-    # Calculate average time
+    
     exec_times = [e.get("execution_time", 0) for e in executions if "execution_time" in e]
     avg_time = sum(exec_times) / len(exec_times) if exec_times else 0
     
-    # Get timestamp of latest execution
+  
     latest = max([e.get("timestamp", 0) for e in executions]) if executions else 0
     
     return {
@@ -403,7 +368,7 @@ async def delete_function(function_id: str):
 @app.get("/system/info", dependencies=[Depends(get_api_key)])
 async def get_system_info():
     """Get system information (protected endpoint)"""
-    # Get container pool metrics from each runtime
+    
     pool_metrics = {}
     
     if hasattr(docker_py, 'container_pool') and docker_py.container_pool:
@@ -425,7 +390,7 @@ async def get_system_info():
 @app.get("/system/status")
 async def get_system_status():
     """Get detailed system status"""
-    # Get container pool metrics
+    
     pool_metrics = {}
     
     if hasattr(docker_py, 'container_pool') and docker_py.container_pool:
@@ -434,16 +399,13 @@ async def get_system_status():
     if hasattr(docker_js, 'container_pool') and docker_js.container_pool:
         pool_metrics["docker_javascript"] = docker_js.container_pool.get_pool_metrics()
     
-    # Get overall metrics
     metrics = metrics_manager.get_metrics()
     
-    # Get active container count
     try:
         active_containers = len(docker_py.client.containers.list())
     except:
         active_containers = 0
     
-    # Get number of stored functions by language
     functions_by_language = {
         "python": sum(1 for f in functions_db.values() if f.get("language") == "python"),
         "javascript": sum(1 for f in functions_db.values() if f.get("language") == "javascript")
@@ -463,13 +425,13 @@ async def get_system_status():
         }
     }
 
-# Add startup time tracking
+
 startup_time = time.time()
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize resources on startup"""
-    # Build the Docker images if they don't exist
+    
     docker_py.preload_image()
     docker_js.preload_image()
 
@@ -489,20 +451,18 @@ def preload_image(self) -> None:
         print(f"Image {self.base_image} is already available")
     except docker.errors.ImageNotFound:
         print(f"Image {self.base_image} not found locally. Building...")
-        # Building the image from the Dockerfile
+        
         build_path = os.path.join(os.getcwd(), "docker")
         
         dockerfile = "Dockerfile.python"
         if self.language == "javascript":
             dockerfile = "Dockerfile.javascript"
             
-        # On macOS, copy handler files to docker directory
         if platform.system() == "Darwin":
             handler_file = "function_handler.py" if self.language == "python" else "function_handler.js"
             template_path = os.path.join(os.getcwd(), "function_templates", self.language, handler_file)
             docker_path = os.path.join(build_path, handler_file)
             
-            # Copy the handler file to docker directory
             if os.path.exists(template_path) and not os.path.exists(docker_path):
                 import shutil
                 shutil.copy(template_path, docker_path)
@@ -514,11 +474,10 @@ def preload_image(self) -> None:
         )
         print(f"Image {self.base_image} built successfully")
         
-        # Clean up handler file if copied on macOS
         if platform.system() == "Darwin":
             if os.path.exists(docker_path):
                 os.remove(docker_path)
 
 if __name__ == "__main__":
-    # Start the API server
+    
     uvicorn.run(app, host="0.0.0.0", port=8000)
