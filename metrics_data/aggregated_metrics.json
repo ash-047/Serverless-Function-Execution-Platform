@@ -2,8 +2,8 @@
   "total_executions": 1,
   "successful_executions": 1,
   "failed_executions": 0,
-  "total_execution_time": 3.7767982482910156,
-  "avg_execution_time": 3.7767982482910156,
+  "total_execution_time": 1.7865371704101562,
+  "avg_execution_time": 1.7865371704101562,
   "cold_starts": 1,
   "warm_starts": 0,
   "by_language": {
@@ -11,20 +11,20 @@
       "count": 1,
       "success": 1,
       "errors": 0,
-      "avg_time": 3.7767982482910156,
-      "total_time": 3.7767982482910156
+      "avg_time": 1.7865371704101562,
+      "total_time": 1.7865371704101562
     }
   },
   "by_runtime": {
-    "standard": {
+    "docker": {
       "count": 1,
       "success": 1,
       "errors": 0,
-      "avg_time": 3.7767982482910156,
-      "total_time": 3.7767982482910156
+      "avg_time": 1.7865371704101562,
+      "total_time": 1.7865371704101562
     }
   },
   "hourly_stats": {
-    "2025-04-04 17:00": 1
+    "2025-04-04 18:00": 1
   }
 }
