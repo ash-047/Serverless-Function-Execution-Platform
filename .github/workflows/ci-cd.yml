@@ -1,0 +1,65 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ] 
+    pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v1
+    
+    - name: Build Python function image
+      run: |
+        cd docker
+        cp ../function_templates/python/function_handler.py .
+        docker build -t python-function:latest -f Dockerfile.python .
+        rm function_handler.py
+    
+    - name: Build JavaScript function image
+      run: |
+        cd docker
+        cp ../function_templates/javascript/function_handler.js .
+        docker build -t javascript-function:latest -f Dockerfile.javascript .
+        rm function_handler.js
+    
+    - name: Test Docker connection
+      run: python tests/test_docker_connection.py
+    
+    - name: Test direct execution
+      run: |
+        python -c "
+        from backend.execution_engine.docker_runtime import DockerRuntime
+        runtime = DockerRuntime(base_image='python-function:latest', use_pool=False)
+        result = runtime.execute_function(
+            code='def handler(event): return {\"message\": \"Hello, \" + event.get(\"name\", \"World\")}',
+            input_data={\"name\": \"CI/CD\"}
+        )
+        print(result)
+        assert result['status'] == 'success', 'Execution failed'
+        "
+    
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
