@@ -190,8 +190,6 @@ cd serverless-platform</pre>
                 </ol>
             </div>
             
-            <!-- ... other documentation sections ... -->
-            
             <div id="api-reference" class="section" style="display: none;">
                 <h2>API Reference</h2>
                 <p>The platform provides a RESTful API for programmatic access to all functionality.</p>
@@ -329,30 +327,23 @@ curl -X POST http://localhost:8000/execute \
                     <li><strong>Supported Languages:</strong> Python, JavaScript (Node.js)</li>
                 </ul>
             </div>
-            
-            <!-- Add more sections as needed -->
         </div>
     </div>
     
     <script>
         function showSection(sectionId) {
-            // Hide all sections
             document.querySelectorAll('.section').forEach(section => {
                 section.style.display = 'none';
             });
             
-            // Show the selected section
             document.getElementById(sectionId).style.display = 'block';
             
-            // Update active state in navigation
             document.querySelectorAll('.nav-item a').forEach(link => {
                 link.classList.remove('active');
             });
             
-            // Set the clicked link as active
             event.currentTarget.classList.add('active');
             
-            // Prevent default anchor behavior
             event.preventDefault();
         }
     </script>
