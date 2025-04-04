@@ -20,12 +20,15 @@ class DockerRuntime:
             use_pool: Whether to use the container pool for warm starts
             language: The programming language ("python" or "javascript")
         """
-        # Initialize Docker client for Windows
+        # Initialize Docker client based on platform
         try:
             # On Windows, use the named pipe
             if platform.system() == "Windows":
                 self.client = docker.DockerClient(base_url='npipe:////./pipe/docker_engine')
                 print("Using Windows named pipe for Docker connection")
+            elif platform.system() == "Darwin":  # macOS
+                self.client = docker.from_env()
+                print("Using default Docker connection on macOS")
             else:
                 self.client = docker.from_env()
                 print("Using default Docker connection")

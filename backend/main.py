@@ -468,6 +468,46 @@ def shutdown_event():
     docker_py.shutdown()
     docker_js.shutdown()
 
+def preload_image(self) -> None:
+    """
+    Ensure the base image is available locally.
+    If not, it will be built from the Dockerfile.
+    """
+    try:
+        self.client.images.get(self.base_image)
+        print(f"Image {self.base_image} is already available")
+    except docker.errors.ImageNotFound:
+        print(f"Image {self.base_image} not found locally. Building...")
+        # Building the image from the Dockerfile
+        build_path = os.path.join(os.getcwd(), "docker")
+        
+        dockerfile = "Dockerfile.python"
+        if self.language == "javascript":
+            dockerfile = "Dockerfile.javascript"
+            
+        # On macOS, copy handler files to docker directory
+        if platform.system() == "Darwin":
+            handler_file = "function_handler.py" if self.language == "python" else "function_handler.js"
+            template_path = os.path.join(os.getcwd(), "function_templates", self.language, handler_file)
+            docker_path = os.path.join(build_path, handler_file)
+            
+            # Copy the handler file to docker directory
+            if os.path.exists(template_path) and not os.path.exists(docker_path):
+                import shutil
+                shutil.copy(template_path, docker_path)
+            
+        self.client.images.build(
+            path=build_path,
+            dockerfile=dockerfile,
+            tag=self.base_image
+        )
+        print(f"Image {self.base_image} built successfully")
+        
+        # Clean up handler file if copied on macOS
+        if platform.system() == "Darwin":
+            if os.path.exists(docker_path):
+                os.remove(docker_path)
+
 if __name__ == "__main__":
     # Start the API server
     uvicorn.run(app, host="0.0.0.0", port=8000)

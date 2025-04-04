@@ -1,0 +1,5 @@
+build.bat -> build.sh
+run_server_debug.bat -> run_server_debug.sh
+
+
+how to run:

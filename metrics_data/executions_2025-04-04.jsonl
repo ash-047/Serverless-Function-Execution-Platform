@@ -6,3 +6,5 @@
 {"execution_id": "exec-1743708703-2a9578", "language": "python", "runtime": "gvisor", "status": "success", "execution_time": 0.34818315505981445, "warm_start": false, "error": null, "timestamp": 1743708703.727929}
 {"execution_id": "exec-1743708705-2a9578", "language": "python", "runtime": "gvisor", "status": "success", "execution_time": 0.35045528411865234, "warm_start": false, "error": null, "timestamp": 1743708706.2415278}
 {"execution_id": "exec-1743708733-2a9578", "language": "python", "runtime": "gvisor", "status": "success", "execution_time": 0.35205626487731934, "warm_start": false, "error": null, "timestamp": 1743708734.0976677}
+{"execution_id": "exec-1743760831-2a9578", "language": "python", "runtime": "docker", "status": "success", "execution_time": 2.0504086017608643, "warm_start": false, "error": null, "timestamp": 1743760834.055378}
+{"execution_id": "exec-1743760934-6cefcf", "language": "javascript", "runtime": "docker", "status": "success", "execution_time": 3.5598907470703125, "warm_start": false, "error": null, "timestamp": 1743760938.923424}
