@@ -1,30 +1,30 @@
 {
-  "total_executions": 1,
-  "successful_executions": 1,
+  "total_executions": 2,
+  "successful_executions": 2,
   "failed_executions": 0,
-  "total_execution_time": 1.7865371704101562,
-  "avg_execution_time": 1.7865371704101562,
-  "cold_starts": 1,
+  "total_execution_time": 3.78853702545166,
+  "avg_execution_time": 1.89426851272583,
+  "cold_starts": 2,
   "warm_starts": 0,
   "by_language": {
     "python": {
-      "count": 1,
-      "success": 1,
+      "count": 2,
+      "success": 2,
       "errors": 0,
-      "avg_time": 1.7865371704101562,
-      "total_time": 1.7865371704101562
+      "avg_time": 1.89426851272583,
+      "total_time": 3.78853702545166
     }
   },
   "by_runtime": {
     "docker": {
-      "count": 1,
-      "success": 1,
+      "count": 2,
+      "success": 2,
       "errors": 0,
-      "avg_time": 1.7865371704101562,
-      "total_time": 1.7865371704101562
+      "avg_time": 1.89426851272583,
+      "total_time": 3.78853702545166
     }
   },
   "hourly_stats": {
-    "2025-04-04 18:00": 1
+    "2025-04-08 12:00": 2
   }
 }

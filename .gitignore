@@ -1,3 +1,5 @@
 venv/
 example/
 .gitignore
+backend/execution_engine/__pycache__
+
