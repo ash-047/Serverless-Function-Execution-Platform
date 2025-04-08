@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serverless Function Platform - Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        h1, h2, h3 {
+            color: #333;
+        }
+        
+        h1 {
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        .content-container {
+            display: flex;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-right: 20px;
+        }
+        
+        .main-content {
+            flex: 1;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-item {
+            margin-bottom: 5px;
+        }
+        
+        .nav-item a {
+            display: block;
+            padding: 8px;
+            text-decoration: none;
+            color: #333;
+            border-radius: 4px;
+        }
+        
+        .nav-item a:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .nav-item a.active {
+            background-color: #e0f0ff;
+            font-weight: bold;
+        }
+        
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: monospace;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        
+        .button:hover {
+            background-color: #45a049;
+        }
+        
+        .note {
+            background-color: #fffde7;
+            padding: 15px;
+            border-left: 4px solid #ffd600;
+            margin: 20px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        table th, table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        table th {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Serverless Function Platform Documentation</h1>
+    
+    <div class="content-container">
+        <div class="sidebar">
+            <div class="nav-item"><a href="#" class="active" onclick="showSection('overview')">Overview</a></div>
+            <div class="nav-item"><a href="#" onclick="showSection('getting-started')">Getting Started</a></div>
+            <div class="nav-item"><a href="#" onclick="showSection('creating-functions')">Creating Functions</a></div>
+            <div class="nav-item"><a href="#" onclick="showSection('executing-functions')">Executing Functions</a></div>
+            <div class="nav-item"><a href="#" onclick="showSection('managing-functions')">Managing Functions</a></div>
+            <div class="nav-item"><a href="#" onclick="showSection('monitoring')">Monitoring Dashboard</a></div>
+            <div class="nav-item"><a href="#" onclick="showSection('api-reference')">API Reference</a></div>
+            <div class="nav-item"><a href="#" onclick="showSection('architecture')">System Architecture</a></div>
+            <div class="nav-item"><a href="#" onclick="showSection('troubleshooting')">Troubleshooting</a></div>
+            <div class="nav-item"><a href="/" class="button">Back to Platform</a></div>
+        </div>
+        
+        <div class="main-content">
+            <div id="overview" class="section">
+                <h2>Overview</h2>
+                <p>The Serverless Function Platform is a self-contained system for deploying, executing, and monitoring serverless functions. It provides a simple yet powerful environment for running your code without worrying about server management.</p>
+                
+                <p>Key features:</p>
+                <ul>
+                    <li>Support for multiple programming languages (Python, JavaScript)</li>
+                    <li>Multiple virtualization technologies (Docker, gVisor)</li>
+                    <li>Function warm-up for improved performance</li>
+                    <li>Comprehensive metrics and monitoring dashboard</li>
+                    <li>Simple web interface for function management</li>
+                    <li>RESTful API for integration with other systems</li>
+                </ul>
+                
+                <div class="note">
+                    <strong>Note:</strong> This platform is designed for educational and development purposes. For production workloads, consider using established serverless platforms like AWS Lambda, Google Cloud Functions, or Azure Functions.
+                </div>
+            </div>
+            
+            <div id="getting-started" class="section" style="display: none;">
+                <h2>Getting Started</h2>
+                <p>To get started with the Serverless Function Platform, follow these steps:</p>
+                
+                <h3>Prerequisites</h3>
+                <ul>
+                    <li>Docker Desktop installed and running</li>
+                    <li>Python 3.8 or higher</li>
+                    <li>For gVisor support: A Linux environment with gVisor installed</li>
+                </ul>
+                
+                <h3>Installation</h3>
+                <ol>
+                    <li>Clone the repository:
+                        <pre>git clone https://github.com/yourusername/serverless-platform.git
+cd serverless-platform</pre>
+                    </li>
+                    <li>Install dependencies:
+                        <pre>pip install -r requirements.txt</pre>
+                    </li>
+                    <li>Build the Docker images:
+                        <pre>cd docker
+./build.bat</pre>
+                    </li>
+                    <li>Start the platform:
+                        <pre>python backend/main.py</pre>
+                    </li>
+                    <li>Access the web interface at <a href="http://localhost:8000">http://localhost:8000</a></li>
+                </ol>
+            </div>
+            
+            <div id="api-reference" class="section" style="display: none;">
+                <h2>API Reference</h2>
+                <p>The platform provides a RESTful API for programmatic access to all functionality.</p>
+                
+                <h3>Function Execution</h3>
+                <table>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Method</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>/execute</code></td>
+                        <td>POST</td>
+                        <td>Execute a function directly</td>
+                    </tr>
+                    <tr>
+                        <td><code>/functions/{function_id}/execute</code></td>
+                        <td>POST</td>
+                        <td>Execute a stored function</td>
+                    </tr>
+                </table>
+                
+                <h4>Example: Execute a function directly</h4>
+                <pre>
+curl -X POST http://localhost:8000/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "def handler(event): return {\"message\": \"Hello, \" + event.get(\"name\", \"World\")}",
+    "input_data": {"name": "Serverless"},
+    "language": "python",
+    "runtime": "docker"
+  }'
+                </pre>
+                
+                <h3>Function Management</h3>
+                <table>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Method</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>/functions</code></td>
+                        <td>GET</td>
+                        <td>List all stored functions</td>
+                    </tr>
+                    <tr>
+                        <td><code>/functions</code></td>
+                        <td>POST</td>
+                        <td>Create/update a function</td>
+                    </tr>
+                    <tr>
+                        <td><code>/functions/{function_id}</code></td>
+                        <td>GET</td>
+                        <td>Get a specific function</td>
+                    </tr>
+                    <tr>
+                        <td><code>/functions/{function_id}</code></td>
+                        <td>DELETE</td>
+                        <td>Delete a function</td>
+                    </tr>
+                </table>
+                
+                <h3>Metrics</h3>
+                <table>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Method</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>/metrics</code></td>
+                        <td>GET</td>
+                        <td>Get overall metrics</td>
+                    </tr>
+                    <tr>
+                        <td><code>/metrics/recent</code></td>
+                        <td>GET</td>
+                        <td>Get recent executions</td>
+                    </tr>
+                    <tr>
+                        <td><code>/metrics/by-runtime</code></td>
+                        <td>GET</td>
+                        <td>Get metrics by runtime</td>
+                    </tr>
+                    <tr>
+                        <td><code>/metrics/by-language</code></td>
+                        <td>GET</td>
+                        <td>Get metrics by language</td>
+                    </tr>
+                    <tr>
+                        <td><code>/metrics/function/{function_id}</code></td>
+                        <td>GET</td>
+                        <td>Get metrics for a specific function</td>
+                    </tr>
+                    <tr>
+                        <td><code>/system/status</code></td>
+                        <td>GET</td>
+                        <td>Get system status</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div id="architecture" class="section" style="display: none;">
+                <h2>System Architecture</h2>
+                <p>The Serverless Function Platform is built with a modular architecture consisting of several key components:</p>
+                
+                <h3>Components</h3>
+                <ul>
+                    <li><strong>API Server:</strong> FastAPI-based REST API handling requests and responses</li>
+                    <li><strong>Execution Engine:</strong> Manages function execution in containers</li>
+                    <li><strong>Container Pool:</strong> Maintains pre-warmed containers for faster execution</li>
+                    <li><strong>Metrics Manager:</strong> Collects and aggregates execution metrics</li>
+                    <li><strong>Function Store:</strong> Stores function code and metadata</li>
+                    <li><strong>Web UI:</strong> Provides a user interface for managing functions</li>
+                </ul>
+                
+                <h3>Execution Flow</h3>
+                <ol>
+                    <li>User submits a function for execution via the API or UI</li>
+                    <li>API server validates the request</li>
+                    <li>Execution engine selects appropriate runtime (Docker/gVisor)</li>
+                    <li>Container pool provides a pre-warmed container or creates a new one</li>
+                    <li>Function code is executed in the container</li>
+                    <li>Results are captured and returned to the user</li>
+                    <li>Metrics are recorded for monitoring</li>
+                </ol>
+                
+                <h3>Technologies Used</h3>
+                <ul>
+                    <li><strong>Backend:</strong> Python, FastAPI</li>
+                    <li><strong>Frontend:</strong> HTML, CSS, JavaScript</li>
+                    <li><strong>Virtualization:</strong> Docker, gVisor</li>
+                    <li><strong>Supported Languages:</strong> Python, JavaScript (Node.js)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            document.getElementById(sectionId).style.display = 'block';
+            
+            document.querySelectorAll('.nav-item a').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            event.currentTarget.classList.add('active');
+            
+            event.preventDefault();
+        }
+    </script>
+</body>
+</html>
