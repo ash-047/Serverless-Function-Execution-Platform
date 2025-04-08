@@ -81,12 +81,12 @@ class DockerRuntime:
         return file_path, temp_dir
 
     def execute_function(self, 
-                        code: str, 
-                        function_name: str = "handler", 
-                        input_data: Dict[str, Any] = None, 
-                        timeout: Optional[int] = None,
-                        language: Optional[str] = None,
-                        runtime: Optional[str] = None) -> Dict[str, Any]:
+                    code: str, 
+                    function_name: str = "handler", 
+                    input_data: Dict[str, Any] = None, 
+                    timeout: Optional[int] = None,
+                    language: Optional[str] = None,
+                    runtime: Optional[str] = None) -> Dict[str, Any]:
         """
         Execute a function in a Docker container.
         
@@ -128,20 +128,33 @@ class DockerRuntime:
             
             # Try to get a container from the pool if enabled
             if self.use_pool and self.container_pool:
-                container_id = self.container_pool.get_container()
-                if container_id:
-                    using_pooled_container = True
-                    try:
-                        container = self.client.containers.get(container_id)
-                        # Ensure container is running
-                        if container.status != "running":
-                            print(f"Container {container_id[:12]} is not running, starting it")
-                            container.start()
-                            time.sleep(1)  # Give it a moment to start
-                    except Exception as e:
-                        print(f"Error getting container from pool: {e}")
-                        using_pooled_container = False
-                        container_id = None
+                # Skip pool for gVisor runtime to avoid file copy issues
+                if runtime != "runsc":
+                    container_id = self.container_pool.get_container()
+                    if container_id:
+                        using_pooled_container = True
+                        try:
+                            container = self.client.containers.get(container_id)
+                            # Ensure container is running
+                            if container.status != "running":
+                                print(f"Container {container_id[:12]} is not running, starting it")
+                                container.start()
+                                # Increase wait time after starting to ensure container is fully ready
+                                time.sleep(5)  # Changed from 1 to 2 seconds
+                                
+                                # Add explicit status check before proceeding
+                                container.reload()  # Refresh container status
+                                if container.status != "running":
+                                    print(f"Container {container_id[:12]} failed to start properly")
+                                    using_pooled_container = False
+                                    container_id = None
+                                    raise Exception("Container failed to start properly")  # Give it a moment to start
+                        except Exception as e:
+                            print(f"Error getting container from pool: {e}")
+                            using_pooled_container = False
+                            container_id = None
+                else:
+                    print(f"Skipping container pool for gVisor runtime")
             
             # If no pooled container is available, create a new one
             if not using_pooled_container:
@@ -187,6 +200,10 @@ class DockerRuntime:
                 # Using a pooled container - copy the function code and execute it
                 print(f"Using pooled container: {container_id[:12]}")
                 try:
+                    # Skip for gVisor runtime - this should never happen due to the check above, but just in case
+                    if runtime == "runsc":
+                        raise Exception("File copy not supported with gVisor runtime")
+                    
                     # Copy the function code to the container
                     with open(code_path, 'rb') as src_file:
                         data = src_file.read()
@@ -217,25 +234,31 @@ class DockerRuntime:
                     using_pooled_container = False
                     container_name = f"function-{uuid.uuid4()}"
                     print(f"Falling back to new container: {container_name}")
-                    container = self.client.containers.run(
-                        self.base_image,
-                        detach=True,
-                        name=container_name,
-                        volumes={
+                    container_options = {
+                        "image": self.base_image,
+                        "detach": True,
+                        "name": container_name,
+                        "volumes": {
                             code_path: {
                                 "bind": f"/function/function_code{self.file_extension}",
                                 "mode": "ro"
                             }
                         },
-                        environment={
+                        "environment": {
                             "FUNCTION_PATH": f"/function/function_code{self.file_extension}",
                             "FUNCTION_NAME": function_name,
                             "INPUT_DATA": json.dumps(input_data)
                         },
-                        mem_limit="128m",
-                        cpu_quota=100000,
-                        network_mode="none"
-                    )
+                        "mem_limit": "128m",
+                        "cpu_quota": 100000,
+                        "network_mode": "none"
+                    }
+                    
+                    # Add runtime if specified (e.g., gVisor)
+                    if runtime:
+                        container_options["runtime"] = runtime
+                        
+                    container = self.client.containers.run(**container_options)
                     container_id = container.id
             
             # Wait for the container to finish or timeout

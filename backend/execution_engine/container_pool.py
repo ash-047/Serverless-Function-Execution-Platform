@@ -65,13 +65,15 @@ class ContainerPool:
             image=self.base_image,
             name=container_name,
             detach=True,
+            # Use a more reliable command to keep container running
+            command=["sh", "-c", "while true; do sleep 10; done"],
             # Basic container setup with minimal resources
             mem_limit="64m",
             cpu_quota=50000,  # 5% of CPU
-            network_disabled=True,
-            command="sleep infinity"  # Keep container running
+            network_disabled=False,  # Allow network for better stability
+            restart_policy={"Name": "always"}  # Auto-restart if it stops
         )
-        
+            
         container_id = container.id
         self.containers[container_id] = {
             "container": container,
