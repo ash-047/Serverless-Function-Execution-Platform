@@ -13,7 +13,6 @@ from typing import Dict, Any, Optional, List
 import uvicorn
 import time
 
-# Print diagnostic information to help with debugging
 def print_diagnostic_info():
     print("=== Diagnostic Information ===")
     print(f"Python version: {sys.version}")
@@ -28,7 +27,6 @@ def print_diagnostic_info():
 
 print_diagnostic_info()
 
-# Import our execution engine
 print("Importing Docker runtime...")
 from execution_engine.docker_runtime import DockerRuntime
 
@@ -37,33 +35,28 @@ app = FastAPI(title="Serverless Function Platform")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development, restrict in production
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Define the static files directory (relative to where the app is run)
 static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 if not os.path.exists(static_dir):
     os.makedirs(static_dir)
     print(f"Created static directory: {static_dir}")
 
-# Mount the static files directory
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 print("Initializing Docker runtime...")
-# Initialize Python and JavaScript runtimes
 runtime_py = DockerRuntime(base_image="python-function:latest", use_pool=False, language="python")
 runtime_js = DockerRuntime(base_image="javascript-function:latest", use_pool=False, language="javascript")
 print("Docker runtimes initialized successfully!")
 
-# Define language enum
 class Language(str, Enum):
     python = "python"
     javascript = "javascript"
 
-# Models for request/response
 class FunctionExecutionRequest(BaseModel):
     code: str
     function_name: str = "handler"
@@ -78,7 +71,7 @@ class FunctionCreateRequest(BaseModel):
     description: Optional[str] = None
     language: Language = Language.python
     timeout: Optional[int] = 60
-    memory: Optional[int] = 128  # Memory limit in MB
+    memory: Optional[int] = 128  
 
 class FunctionMetadata(BaseModel):
     id: str
@@ -91,35 +84,27 @@ class FunctionMetadata(BaseModel):
     created_at: Optional[float] = None
     updated_at: Optional[float] = None
 
-# Simple in-memory storage for functions
 functions_db = {}
 
 @app.get("/")
 async def root():
-    """Serve the main UI page"""
     return FileResponse(os.path.join(static_dir, "index.html"))
 
 @app.post("/execute")
 async def execute_function(request: FunctionExecutionRequest):
-    """Execute a function directly from the request"""
     try:
-        # Add more detailed logging
         print(f"Executing {request.language} function: {request.function_name}")
         print(f"Input data: {request.input_data}")
-        
-        # Select the appropriate runtime based on language
         if request.language == Language.javascript:
             runtime = runtime_js
         else:
             runtime = runtime_py
-            
         result = runtime.execute_function(
             code=request.code,
             function_name=request.function_name,
             input_data=request.input_data,
             timeout=request.timeout
         )
-        
         print(f"Execution result: {result.get('status', 'unknown')}")
         return result
     except Exception as e:
@@ -131,13 +116,8 @@ async def execute_function(request: FunctionExecutionRequest):
 async def create_function(request: FunctionCreateRequest):
     """Create/update a stored function"""
     function_id = request.name.lower().replace(" ", "-")
-    
-    # Add timestamp for creation/update
     now = time.time()
-    
-    # Check if updating or creating
     is_update = function_id in functions_db
-    
     functions_db[function_id] = {
         "id": function_id,
         "name": request.name,
@@ -150,36 +130,30 @@ async def create_function(request: FunctionCreateRequest):
         "created_at": functions_db.get(function_id, {}).get("created_at", now),
         "updated_at": now
     }
-    
     message = "updated" if is_update else "created"
     return {"id": function_id, "message": f"Function {message} successfully"}
 
 @app.get("/functions")
 async def list_functions():
-    """List all stored functions"""
     return list(functions_db.values())
 
 @app.get("/functions/{function_id}")
 async def get_function(function_id: str):
-    """Get a specific function"""
     if function_id not in functions_db:
         raise HTTPException(status_code=404, detail="Function not found")
     return functions_db[function_id]
 
 @app.post("/functions/{function_id}/execute")
 async def execute_stored_function(function_id: str, input_data: Dict[str, Any] = Body(...)):
-    """Execute a stored function"""
     if function_id not in functions_db:
         raise HTTPException(status_code=404, detail="Function not found")
     
     function = functions_db[function_id]
     try:
-        # Select the appropriate runtime based on function language
         if function.get("language") == Language.javascript:
             runtime = runtime_js
         else:
             runtime = runtime_py
-            
         result = runtime.execute_function(
             code=function["code"],
             function_name=function["function_name"],
@@ -192,8 +166,6 @@ async def execute_stored_function(function_id: str, input_data: Dict[str, Any] =
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize resources on startup"""
-    # Build the Docker images if they don't exist
     runtime_py.preload_image()
     runtime_js.preload_image()
 
@@ -204,5 +176,4 @@ def shutdown_event():
     runtime_js.shutdown()
 
 if __name__ == "__main__":
-    # Start the API server
     uvicorn.run(app, host="0.0.0.0", port=8000)
