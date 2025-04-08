@@ -5,9 +5,6 @@ import uuid
 import platform
 from typing import Dict, List, Optional
 import queue
-import json
-import os
-import random
 
 class ContainerPool:
     def __init__(self, base_image: str, min_pool_size: int = 3, max_pool_size: int = 10, 
