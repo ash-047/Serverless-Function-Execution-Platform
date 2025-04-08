@@ -13,7 +13,6 @@
         <div class="left-panel">
             <h2>Stored Functions</h2>
             <div class="function-list" id="functionList">
-                <!-- Function items will be loaded here -->
             </div>
             
             <h2>Function Code</h2>
@@ -75,47 +74,37 @@ module.exports = { handler };</textarea>
             <span id="spinner" class="spinner hidden"></span>
             
             <div id="result">
-                <!-- Execution result will be displayed here -->
                 Results will appear here after execution
             </div>
         </div>
     </div>
 
     <script>
-        // Base URL for API
         const API_URL = 'http://localhost:8000';
         let selectedFunctionId = null;
         let currentLanguage = 'python';
         
-        // Load stored functions when page loads
         window.onload = function() {
             loadFunctions();
         };
         
-        // Function to switch between code tabs
         function switchTab(language) {
-            // Update tabs
             document.getElementById('pythonTab').classList.toggle('active', language === 'python');
             document.getElementById('javascriptTab').classList.toggle('active', language === 'javascript');
             
-            // Show/hide code editors
             document.getElementById('pythonCode').style.display = language === 'python' ? 'block' : 'none';
             document.getElementById('javascriptCode').style.display = language === 'javascript' ? 'block' : 'none';
             
-            // Update language dropdown
             document.getElementById('languageSelect').value = language;
             
-            // Update current language
             currentLanguage = language;
         }
         
-        // Function to change language from dropdown
         function changeLanguage() {
             const language = document.getElementById('languageSelect').value;
             switchTab(language);
         }
         
-        // Function to load all stored functions
         async function loadFunctions() {
             try {
                 const response = await fetch(`${API_URL}/functions`);
@@ -143,19 +132,16 @@ module.exports = { handler };</textarea>
             }
         }
         
-        // Select a function from the list
         async function selectFunction(functionId) {
             try {
                 const response = await fetch(`${API_URL}/functions/${functionId}`);
                 if (response.ok) {
                     const func = await response.json();
                     
-                    // Update the form with function details
                     document.getElementById('functionName').value = func.name;
                     document.getElementById('description').value = func.description || '';
                     document.getElementById('timeout').value = func.timeout || 60;
-                    
-                    // Set language and update code
+        
                     const language = func.language || 'python';
                     document.getElementById('languageSelect').value = language;
                     
@@ -165,13 +151,10 @@ module.exports = { handler };</textarea>
                         document.getElementById('pythonCode').value = func.code;
                     }
                     
-                    // Switch to the right tab
                     switchTab(language);
                     
-                    // Update selected function
                     selectedFunctionId = functionId;
                     
-                    // Highlight selected function in the list
                     document.querySelectorAll('.function-item').forEach(item => {
                         if (item.dataset.id === functionId) {
                             item.classList.add('selected');
@@ -185,7 +168,6 @@ module.exports = { handler };</textarea>
             }
         }
         
-        // Save a function
         async function saveFunction() {
             const name = document.getElementById('functionName').value;
             const language = document.getElementById('languageSelect').value;
@@ -229,8 +211,7 @@ module.exports = { handler };</textarea>
                 alert('Error saving function. See console for details.');
             }
         }
-        
-        // Execute a function
+    
         async function executeFunction() {
             const language = document.getElementById('languageSelect').value;
             const code = language === 'javascript' ? 
@@ -245,7 +226,6 @@ module.exports = { handler };</textarea>
                 return;
             }
             
-            // Show spinner
             document.getElementById('spinner').classList.remove('hidden');
             document.getElementById('executeBtn').disabled = true;
             
@@ -253,7 +233,7 @@ module.exports = { handler };</textarea>
                 let response;
                 
                 if (selectedFunctionId) {
-                    // Execute stored function
+                    
                     response = await fetch(`${API_URL}/functions/${selectedFunctionId}/execute`, {
                         method: 'POST',
                         headers: {
@@ -262,7 +242,7 @@ module.exports = { handler };</textarea>
                         body: JSON.stringify(inputData)
                     });
                 } else {
-                    // Execute direct function
+                
                     response = await fetch(`${API_URL}/execute`, {
                         method: 'POST',
                         headers: {
@@ -280,7 +260,6 @@ module.exports = { handler };</textarea>
                 const result = await response.json();
                 document.getElementById('result').textContent = JSON.stringify(result, null, 2);
                 
-                // Add highlighting based on success/error
                 if (result.status === 'success') {
                     document.getElementById('result').style.backgroundColor = '#e9ffe9';
                 } else {
@@ -291,7 +270,7 @@ module.exports = { handler };</textarea>
                 document.getElementById('result').textContent = `Error executing function: ${error.message}`;
                 document.getElementById('result').style.backgroundColor = '#fff0f0';
             } finally {
-                // Hide spinner
+    
                 document.getElementById('spinner').classList.add('hidden');
                 document.getElementById('executeBtn').disabled = false;
             }
