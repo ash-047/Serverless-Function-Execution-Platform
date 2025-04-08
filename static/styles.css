@@ -137,3 +137,362 @@ label {
     padding: 15px;
     border-radius: 0 4px 4px 4px;
 }
+.metrics-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.metrics-summary {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.metric-card {
+    flex: 1;
+    min-width: 250px;
+    padding: 15px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.metrics-detail {
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.metrics-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.metrics-table th, .metrics-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+.metrics-table th {
+    background-color: #f0f0f0;
+}
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+.metric-label {
+    font-weight: bold;
+}
+.tab-link {
+    padding: 8px 16px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin-right: 5px;
+    text-decoration: none;
+    color: #333;
+    display: inline-block;
+}
+
+.tab-link:hover {
+    background-color: #e8e8e8;
+}
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dashboard-header {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.system-status {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.status-card {
+    display: flex;
+    align-items: center;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    flex: 1;
+    min-width: 150px;
+}
+
+.status-icon {
+    font-size: 2em;
+    margin-right: 15px;
+}
+
+.status-value {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.status-label {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.dashboard-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.dashboard-card.wide {
+    grid-column: span 2;
+}
+
+.chart-container {
+    height: 200px;
+    margin-top: 15px;
+}
+
+.simple-chart {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 100%;
+    padding-bottom: 20px;
+}
+
+.chart-bar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.chart-bar {
+    width: 80%;
+    background-color: #4CAF50;
+    margin-bottom: 5px;
+    min-height: 1px;
+}
+
+.chart-label {
+    font-size: 0.8em;
+    color: #666;
+}
+
+.gauge-container {
+    margin-bottom: 15px;
+}
+
+.gauge {
+    height: 20px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.gauge-value {
+    height: 100%;
+    background-color: #2196F3;
+}
+
+.gauge-label {
+    font-size: 0.9em;
+    color: #666;
+}
+.management-container {
+    display: flex;
+    gap: 20px;
+}
+
+.functions-list-container {
+    flex: 1;
+    max-width: 30%;
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.function-filters {
+    display: flex;
+    margin-bottom: 15px;
+    gap: 10px;
+}
+
+.function-filters select, .function-filters input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.functions-list {
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+.function-details {
+    flex: 2;
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.select-message {
+    color: #888;
+    text-align: center;
+    margin-top: 100px;
+}
+
+.function-item {
+    display: flex;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    align-items: center;
+}
+
+.language-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: white;
+    font-weight: bold;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.language-icon.js {
+    background-color: #f7df1e;
+    color: black;
+}
+
+.language-icon.py {
+    background-color: #3776ab;
+}
+
+.function-item-details {
+    overflow: hidden;
+}
+
+.function-item-name {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.function-item-description {
+    font-size: 0.8em;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.function-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.meta-label {
+    font-size: 0.8em;
+    color: #666;
+}
+
+.meta-value {
+    font-weight: bold;
+}
+
+.function-code {
+    margin-top: 20px;
+}
+
+.function-code pre {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 4px;
+    overflow-x: auto;
+    max-height: 300px;
+}
+
+.function-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.btn-edit {
+    background-color: #2196F3;
+}
+
+.btn-execute {
+    background-color: #4CAF50;
+}
+
+.btn-delete {
+    background-color: #f44336;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.stat-card {
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: 0.8em;
+    color: #666;
+}
+
+.empty-list, .error-message {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+}
+
+.error-message {
+    color: #f44336;
+}
