@@ -1,30 +1,37 @@
 {
-  "total_executions": 1,
-  "successful_executions": 1,
+  "total_executions": 3,
+  "successful_executions": 3,
   "failed_executions": 0,
-  "total_execution_time": 1.65975022315979,
-  "avg_execution_time": 1.65975022315979,
-  "cold_starts": 0,
+  "total_execution_time": 1.4046754837036133,
+  "avg_execution_time": 0.4682251612345378,
+  "cold_starts": 2,
   "warm_starts": 1,
   "by_language": {
-    "python": {
-      "count": 1,
-      "success": 1,
+    "javascript": {
+      "count": 3,
+      "success": 3,
       "errors": 0,
-      "avg_time": 1.65975022315979,
-      "total_time": 1.65975022315979
+      "avg_time": 0.4682251612345378,
+      "total_time": 1.4046754837036133
     }
   },
   "by_runtime": {
+    "gvisor": {
+      "count": 2,
+      "success": 2,
+      "errors": 0,
+      "avg_time": 0.6256098747253418,
+      "total_time": 1.2512197494506836
+    },
     "docker": {
       "count": 1,
       "success": 1,
       "errors": 0,
-      "avg_time": 1.65975022315979,
-      "total_time": 1.65975022315979
+      "avg_time": 0.1534557342529297,
+      "total_time": 0.1534557342529297
     }
   },
   "hourly_stats": {
-    "2025-04-09 11:00": 1
+    "2025-04-09 21:00": 3
   }
 }

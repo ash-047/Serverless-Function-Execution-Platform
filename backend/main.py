@@ -9,13 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
-# from fastapi import * 
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 import uvicorn
 import time
 import hashlib
-# import secrets
 import docker
 
 print("Importing execution engines...")
@@ -108,13 +106,7 @@ def get_api_key(api_key_header: str = Security(api_key_header)):
 
 @app.get("/")
 async def root():
-    # serve the main UI page with a documentation link
     return FileResponse(os.path.join(static_dir, "index.html"))
-
-# @app.get("/docs/guide")
-# async def documentation():
-#     # serve the documentation page
-#     return FileResponse(os.path.join(static_dir, "docs.html"))
 
 @app.post("/execute")
 async def execute_function(request: FunctionExecutionRequest):

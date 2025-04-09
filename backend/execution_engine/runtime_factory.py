@@ -1,9 +1,4 @@
 import docker
-# import json
-# import os
-# import platform
-# import subprocess
-# from typing import Dict, Any, Optional
 
 class RuntimeFactory:
     @staticmethod
@@ -11,18 +6,17 @@ class RuntimeFactory:
         from .docker_runtime import DockerRuntime
         python_images = {"docker": "python-function:latest", "gvisor": "python-function:latest"}
         javascript_images = {"docker": "javascript-function:latest", "gvisor": "javascript-function:latest"}
+        
         if language.lower() == "javascript":
             image = javascript_images.get(runtime_type.lower(), javascript_images["docker"])
         else:
             image = python_images.get(runtime_type.lower(), python_images["docker"])
+            
         if runtime_type.lower() == "gvisor":
             is_available = RuntimeFactory.is_gvisor_available()
-            if is_available:
-                print("Using gVisor runtime")
-                return GVisorRuntime(base_image=image, language=language, **kwargs)
-            else:
-                print("gVisor runtime requested but not available. Falling back to Docker runtime.")
-                return DockerRuntime(base_image=image, language=language, **kwargs)
+            if not is_available:
+                print(f"> gVisor runtime requested but not available. Falling back to Docker runtime for {language}.")
+            return GVisorRuntime(base_image=image, language=language, **kwargs)
         else:
             return DockerRuntime(base_image=image, language=language, **kwargs)
     
@@ -42,7 +36,7 @@ class RuntimeFactory:
 class GVisorRuntime:
     def __init__(self, base_image="python-function:latest", timeout=60, use_pool=False, language="python"):
         from .docker_runtime import DockerRuntime
-        self.docker_runtime = DockerRuntime(base_image=base_image, timeout=timeout, use_pool=use_pool, language=language)
+        self.docker_runtime = DockerRuntime(base_image=base_image, timeout=timeout, use_pool=False, language=language)
         self.using_gvisor = RuntimeFactory.is_gvisor_available()
         self.runtime_type = "gvisor" if self.using_gvisor else "docker"
         if self.using_gvisor:
@@ -53,11 +47,10 @@ class GVisorRuntime:
     
     def execute_function(self, code, function_name="handler", input_data=None, timeout=None, **kwargs):
         self.using_gvisor = RuntimeFactory.is_gvisor_available()
+        if not self.using_gvisor:
+            print(f"\nWARNING: gVisor runtime was requested but is not available. Using Docker runtime instead. \n")
         self.runtime_type = "gvisor" if self.using_gvisor else "docker"
-        if self.using_gvisor:
-            print(f"Executing {self.language} function with gVisor runtime")
-        else:
-            print(f"Executing {self.language} function with Docker runtime (fallback mode)")
+        
         result = self.docker_runtime.execute_function(
             code=code,
             function_name=function_name,
@@ -68,7 +61,10 @@ class GVisorRuntime:
         )
         if isinstance(result, dict):
             result["runtime"] = self.runtime_type
-            result["language"] = self.language   
+            result["language"] = self.language
+            if not self.using_gvisor:
+                result["runtime_fallback"] = True
+                result["runtime_note"] = "gVisor requested but Docker used as fallback"
         return result
     
     def preload_image(self):

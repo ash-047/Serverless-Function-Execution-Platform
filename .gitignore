@@ -2,9 +2,8 @@ venv/
 example/
 .gitignore
 backend/execution_engine/__pycache__
-metrics_data/aggregated_metrics.
+metrics_data/
 docker/build.bat
 docker/build.sh
 project_structure.md
-
-
+metrics/__pycache__
