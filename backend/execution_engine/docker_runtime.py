@@ -56,12 +56,12 @@ class DockerRuntime:
         return file_path, temp_dir
 
     def execute_function(self, 
-                    code: str, 
-                    function_name: str = "handler", 
-                    input_data: Dict[str, Any] = None, 
-                    timeout: Optional[int] = None,
-                    language: Optional[str] = None,
-                    runtime: Optional[str] = None) -> Dict[str, Any]:
+                code: str, 
+                function_name: str = "handler", 
+                input_data: Dict[str, Any] = None, 
+                timeout: Optional[int] = None,
+                language: Optional[str] = None,
+                runtime: Optional[str] = None) -> Dict[str, Any]:
         if input_data is None:
             input_data = {}
         if timeout is None:
@@ -69,6 +69,8 @@ class DockerRuntime:
         if language and language.lower() != self.language:
             temp_runtime = DockerRuntime(timeout=timeout, use_pool=False, language=language)
             return temp_runtime.execute_function(code, function_name, input_data, timeout)
+            
+        execution_id = f"exec-{int(time.time())}-{uuid.uuid4().hex[:8]}"
         code_path, temp_dir = self._prepare_function_code(code)
         using_pooled_container = False
         container_id = None
@@ -77,158 +79,154 @@ class DockerRuntime:
         try:
             print(f"Starting execution of {self.language} function: {function_name}")
             start_time = time.time()
-            if self.use_pool and self.container_pool:
-                if runtime != "runsc":
-                    container_id = self.container_pool.get_container()
-                    if container_id:
-                        using_pooled_container = True
-                        try:
-                            container = self.client.containers.get(container_id)
-                            if container.status != "running":
-                                print(f"Container {container_id[:12]} is not running, starting it")
-                                container.start()
-                                time.sleep(5)  
-                                container.reload()  
-                                if container.status != "running":
-                                    print(f"Container {container_id[:12]} failed to start properly")
-                                    using_pooled_container = False
-                                    container_id = None
-                                    raise Exception("Container failed to start properly")  # Give it a moment to start
-                        except Exception as e:
-                            print(f"Error getting container from pool: {e}")
-                            using_pooled_container = False
-                            container_id = None
-                else:
-                    print(f"Skipping container pool for gVisor runtime")
             
-            if not using_pooled_container:
-                container_name = f"function-{uuid.uuid4()}"
-                print(f"Creating new container: {container_name}")
-                
+            if runtime == "runsc":
+                available = False
                 try:
-                    container_options = {
-                        "image": self.base_image,
-                        "detach": True,
-                        "name": container_name,
-                        "volumes": {
-                            code_path: {
-                                "bind": f"/function/function_code{self.file_extension}",
-                                "mode": "ro"
-                            }
-                        },
-                        "environment": {
-                            "FUNCTION_PATH": f"/function/function_code{self.file_extension}",
-                            "FUNCTION_NAME": function_name,
-                            "INPUT_DATA": json.dumps(input_data)
-                        },
-                        "mem_limit": "128m",  # memory limit
-                        "cpu_quota": 100000,  # 10% of CPU
-                        "network_mode": "none"  # no network access for security
-                    }
-                    
-                    if runtime:
-                        container_options["runtime"] = runtime
+                    info = self.client.info()
+                    runtimes = info.get('Runtimes', {})
+                    available = 'runsc' in runtimes
+                except Exception:
+                    available = False
 
-                    container = self.client.containers.run(**container_options)
-                    container_id = container.id
-                    print(f"Created container with ID: {container_id[:12]}")
-                except Exception as e:
-                    print(f"Error creating container: {e}")
-                    print(traceback.format_exc())
-                    raise
-            else:
-                print(f"Using pooled container: {container_id[:12]}")
+                if available:
+                    print(f"Using gVisor runtime for {self.language} function")
+                    using_pooled_container = False
+                else:
+                    print(f"gVisor runtime was requested but is not available on this platform ({platform.system()}). Falling back to standard Docker runtime.")
+                    runtime = None
+                    if self.use_pool and self.container_pool:
+                        container_id = self.container_pool.get_container()
+                        if container_id:
+                            using_pooled_container = True
+                            print(f"Using pooled container: {container_id[:12]}")
+            elif self.use_pool and self.container_pool:
+                container_id = self.container_pool.get_container()
+                if container_id:
+                    using_pooled_container = True
+                    print(f"Using pooled container: {container_id[:12]}")
+            
+            if using_pooled_container:
                 try:
-                    if runtime == "runsc":
-                        raise Exception("File copy not supported with gVisor runtime")
+                    container = self.client.containers.get(container_id)
+                    dest_path = f"/function/function_code{self.file_extension}"
+                    copy_success = self.container_pool.copy_to_container(container_id, code_path, dest_path)
                     
-                    with open(code_path, 'rb') as src_file:
-                        data = src_file.read()
-                        self.client.api.put_archive(container_id, '/function', data)
-                
-                    print(f"Creating exec command in container: {container_id[:12]}")
-                    exec_cmd = self.client.api.exec_create(
-                        container=container_id,
-                        cmd=["node", "/function/function_handler.js"] if self.language == "javascript" else ["python", "/function/function_handler.py"],
-                        environment={
-                            "FUNCTION_PATH": f"/function/function_code{self.file_extension}",
+                    if not copy_success:
+                        print("Failed to copy code to container, falling back to new container")
+                        using_pooled_container = False
+                    else:
+                        cmd = ["node", "/function/function_handler.js"] if self.language == "javascript" else ["python", "/function/function_handler.py"]
+                        env = {
+                            "FUNCTION_PATH": dest_path,
                             "FUNCTION_NAME": function_name,
                             "INPUT_DATA": json.dumps(input_data)
                         }
-                    )
-            
-                    print(f"Starting exec command: {exec_cmd['Id'][:12]}")
-                    exec_output = self.client.api.exec_start(exec_cmd['Id'])
-                    exec_info = self.client.api.exec_inspect(exec_cmd['Id'])
-                    logs = exec_output.decode('utf-8').strip()
-                    print(f"Exec command completed with exit code: {exec_info.get('ExitCode')}")
+                        
+                        exec_id = self.client.api.exec_create(
+                            container=container_id,
+                            cmd=cmd,
+                            environment=env
+                        )
+                        exec_output = self.client.api.exec_start(exec_id['Id'])
+                        exec_info = self.client.api.exec_inspect(exec_id['Id'])
+                        logs = exec_output.decode('utf-8').strip()
+                        print(f"Execution completed with exit code: {exec_info.get('ExitCode')}")
                 except Exception as e:
-                    print(f"Error executing command in container: {e}")
+                    print(f"Error using pooled container: {e}")
                     print(traceback.format_exc())
                     using_pooled_container = False
-                    container_name = f"function-{uuid.uuid4()}"
-                    print(f"Falling back to new container: {container_name}")
-                    container_options = {
-                        "image": self.base_image,
-                        "detach": True,
-                        "name": container_name,
-                        "volumes": {
-                            code_path: {
-                                "bind": f"/function/function_code{self.file_extension}",
-                                "mode": "ro"
-                            }
-                        },
-                        "environment": {
-                            "FUNCTION_PATH": f"/function/function_code{self.file_extension}",
-                            "FUNCTION_NAME": function_name,
-                            "INPUT_DATA": json.dumps(input_data)
-                        },
-                        "mem_limit": "128m",
-                        "cpu_quota": 100000,
-                        "network_mode": "none"
-                    }
-                    if runtime:
-                        container_options["runtime"] = runtime       
-                    container = self.client.containers.run(**container_options)
-                    container_id = container.id
 
-            try:
-                if not using_pooled_container:
-                    print(f"Waiting for container {container_id[:12]} to complete")
-                    exit_code = container.wait(timeout=timeout)["StatusCode"]
-                    logs = container.logs().decode("utf-8").strip()
-                    print(f"Container completed with exit code: {exit_code}")
-                execution_time = time.time() - start_time
+            if not using_pooled_container:
+                container_name = f"function-{execution_id}"
+                print(f"Creating new container: {container_name}")
                 
-                try:
-                    print(f"Parsing output: {logs[:100]}...")
-                    result = json.loads(logs)
-                    result["execution_time"] = execution_time
-                    result["container_id"] = container_id
-                    result["warm_start"] = using_pooled_container
-                    result["runtime"] = runtime if runtime else "standard"
-                    return result
-                except json.JSONDecodeError as e:
-                    print(f"Error parsing JSON: {e}")
-                    return {
-                        "status": "error",
-                        "error": "Failed to parse function output",
-                        "logs": logs,
-                        "execution_time": execution_time,
-                        "warm_start": using_pooled_container,
-                        "runtime": runtime if runtime else "standard"
-                    }
+                container_options = {
+                    "image": self.base_image,
+                    "detach": True,
+                    "name": container_name,
+                    "volumes": {
+                        code_path: {
+                            "bind": f"/function/function_code{self.file_extension}",
+                            "mode": "ro"
+                        }
+                    },
+                    "environment": {
+                        "FUNCTION_PATH": f"/function/function_code{self.file_extension}",
+                        "FUNCTION_NAME": function_name,
+                        "INPUT_DATA": json.dumps(input_data)
+                    },
+                    "mem_limit": "128m",
+                    "cpu_quota": 100000,
+                    "network_mode": "none"
+                }
+                
+                if runtime:
+                    print(f"Using {runtime} runtime for container")
+                    container_options["runtime"] = runtime
+
+                # Create and start the container
+                container = self.client.containers.run(**container_options)
+                container_id = container.id
+                print(f"Created container with ID: {container_id[:12]}")
+                
+                print(f"Waiting for container {container_id[:12]} to complete")
+                result = container.wait(timeout=timeout)
+                exit_code = result.get("StatusCode", -1)
+                logs = container.logs().decode("utf-8").strip()
+                print(f"Container completed with exit code: {exit_code}")
+
+            execution_time = time.time() - start_time
+            
+            try:
+                result = json.loads(logs)
+                result["execution_time"] = execution_time
+                result["container_id"] = container_id
+                result["warm_start"] = using_pooled_container
+                
+                if runtime == "runsc" and not using_pooled_container:
+                    actual_runtime = "gvisor"
+                else:
+                    actual_runtime = "docker"
                     
-            except Exception as e:
-                print(f"Error waiting for container: {e}")
-                execution_time = time.time() - start_time
-                return {
+                result["runtime"] = actual_runtime
+                result["runtime_requested"] = runtime if runtime else "docker"
+
+                if runtime == "runsc" and actual_runtime != "gvisor":
+                    result["runtime_fallback"] = True
+                    result["runtime_note"] = "gVisor requested but Docker used as fallback"
+                if using_pooled_container and self.container_pool:
+                    self.container_pool.release_container(container_id, result)
+                
+                return result
+            except json.JSONDecodeError as e:
+                print(f"Error parsing JSON output: {e}")
+                error_result = {
                     "status": "error",
-                    "error": f"Function execution failed or timed out: {str(e)}",
+                    "error": "Failed to parse function output",
+                    "logs": logs,
                     "execution_time": execution_time,
                     "warm_start": using_pooled_container,
-                    "runtime": runtime if runtime else "standard"
+                    "runtime": "docker" if not runtime or runtime != "runsc" else "gvisor"
                 }
+                if using_pooled_container and self.container_pool:
+                    self.container_pool.release_container(container_id, error_result)
+                return error_result
+                
+        except Exception as e:
+            print(f"Error executing function: {e}")
+            print(traceback.format_exc())
+            execution_time = time.time() - start_time
+            error_result = {
+                "status": "error",
+                "error": f"Function execution failed: {str(e)}",
+                "execution_time": execution_time,
+                "warm_start": using_pooled_container,
+                "runtime": "docker" if not runtime or runtime != "runsc" else "gvisor"
+            }
+            if using_pooled_container and container_id and self.container_pool:
+                self.container_pool.release_container(container_id, error_result)
+            return error_result
                 
         finally:
             if not using_pooled_container and container_id:
@@ -238,9 +236,6 @@ class DockerRuntime:
                         container.remove(force=True)
                 except Exception as e:
                     print(f"Error removing container: {e}")
-            elif using_pooled_container and container_id and self.container_pool:
-                print(f"Returning container to pool: {container_id[:12]}")
-                self.container_pool.release_container(container_id)
             try:
                 os.remove(code_path)
                 os.rmdir(temp_dir)
@@ -257,6 +252,13 @@ class DockerRuntime:
             dockerfile = "Dockerfile.python"
             if self.language == "javascript":
                 dockerfile = "Dockerfile.javascript"
+            if platform.system() == "Darwin":
+                handler_file = "function_handler.py" if self.language == "python" else "function_handler.js"
+                template_path = os.path.join(os.getcwd(), "function_templates", self.language, handler_file)
+                docker_path = os.path.join(build_path, handler_file)
+                if os.path.exists(template_path) and not os.path.exists(docker_path):
+                    import shutil
+                    shutil.copy(template_path, docker_path)
                 
             self.client.images.build(
                 path=build_path,
@@ -264,6 +266,9 @@ class DockerRuntime:
                 tag=self.base_image
             )
             print(f"Image {self.base_image} built successfully")
+            if platform.system() == "Darwin":
+                if os.path.exists(docker_path):
+                    os.remove(docker_path)
     
     def shutdown(self):
         if self.container_pool:

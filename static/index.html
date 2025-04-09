@@ -39,6 +39,10 @@
                 
                 <div class="form-group">
                     <label for="functionCode">Function Code:</label>
+                    <div class="tabs">
+                        <div class="tab active" id="pythonTab" onclick="switchTab('python')">Python</div>
+                        <div class="tab" id="javascriptTab" onclick="switchTab('javascript')">JavaScript</div>
+                    </div>
                     <div class="tab-content">
                         <textarea id="pythonCode" class="code-editor" style="display: block;">def handler(event):
     # Your Python code here
