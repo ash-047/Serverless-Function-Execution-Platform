@@ -1,12 +1,30 @@
 {
-  "total_executions": 0,
-  "successful_executions": 0,
+  "total_executions": 1,
+  "successful_executions": 1,
   "failed_executions": 0,
-  "total_execution_time": 0,
-  "avg_execution_time": 0,
+  "total_execution_time": 1.65975022315979,
+  "avg_execution_time": 1.65975022315979,
   "cold_starts": 0,
-  "warm_starts": 0,
-  "by_language": {},
-  "by_runtime": {},
-  "hourly_stats": {}
+  "warm_starts": 1,
+  "by_language": {
+    "python": {
+      "count": 1,
+      "success": 1,
+      "errors": 0,
+      "avg_time": 1.65975022315979,
+      "total_time": 1.65975022315979
+    }
+  },
+  "by_runtime": {
+    "docker": {
+      "count": 1,
+      "success": 1,
+      "errors": 0,
+      "avg_time": 1.65975022315979,
+      "total_time": 1.65975022315979
+    }
+  },
+  "hourly_stats": {
+    "2025-04-09 11:00": 1
+  }
 }

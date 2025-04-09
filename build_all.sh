@@ -1,5 +1,4 @@
 #!/bin/bash
-# Mac OS version of build_all.bat
 
 echo "Building all Docker images for the serverless platform..."
 
